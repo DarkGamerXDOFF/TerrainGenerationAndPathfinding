@@ -1,14 +1,13 @@
 using UnityEngine;
-using UnityEngine.Rendering;
+using UnityEngine.Tilemaps;
 
 public class MapGenerator : MonoBehaviour
 {
+    [Header("Debug only")]
     public bool autoUpdate = false;
 
-    public enum DrawMode {NoiseMap, ColourMap};
-    public DrawMode drawMode = DrawMode.NoiseMap;
-
     [Space]
+    [Header("Generation")]
     public int mapWidth;
     public int mapHeight;
     public float noiseScale;
@@ -20,27 +19,62 @@ public class MapGenerator : MonoBehaviour
     public int seed;
     public Vector2 offset;
 
+    public enum DrawMode { NoiseMap, ColourMap, TileMap };
+    [Header("Visualize")]
+    public DrawMode drawMode = DrawMode.NoiseMap;
+    public bool viewCellValue = false;
     public TerrainType[] regions;
+
+    public CustomGrid<PathNode<Cell>> grid;
+    public Tilemap tilemap;
+    public GameObject plane;
+
+    public Tile walkable;
+    public Tile blocked;
+    [Range(0,1f)]
+    public float treshhold = .4f;
+
+    private void Awake()
+    {
+        GenerateMap();
+    }
 
     public void GenerateMap()
     {
+        grid = new CustomGrid<PathNode<Cell>>(mapWidth, mapHeight, 10f, Vector3.zero,
+            (CustomGrid<PathNode<Cell>> g, int x, int y) => new PathNode<Cell>(g, x, y));
+
         float[,] noiseMap = Noise.GenerateNoiseMap(mapWidth, mapHeight,seed, noiseScale, octaves, persistance, lacunarity, offset);
         Color[] colourMap = new Color[mapHeight * mapWidth];
+        Tile[,] tiles = new Tile[mapWidth, mapHeight];
 
         for (int y = 0; y < mapHeight; y++)
         {
             for (int x = 0; x < mapWidth; x++)
             {
-                float currentHeight = noiseMap[x, y];
+                //Loop through the cells in the grid and assign corresponding noise value
+                Cell cell = new Cell(noiseMap[x, y], treshhold);
+                cell.Altitude = noiseMap[x, y];
+                grid.GetGridObject(x, y).SetNodeObject(cell, cell.walkable);
 
-                for (int i = 0; i < regions.Length; i++)
+
+                //Apply the noise values to the colour map
+                if (viewCellValue)
                 {
-                    if (currentHeight <= regions[i].heightValue)
+                    colourMap[y * mapWidth + x] = cell.walkable ? Color.white : Color.black;
+                    tiles[x, y] = cell.walkable ? walkable : blocked;
+                }
+                else
+                {
+                    for (int i = 0; i < regions.Length; i++)
                     {
-                        colourMap[y * mapWidth + x] = regions[i].colour;
-                        break;
+                        if (cell.Altitude <= regions[i].heightValue)
+                        {
+                            colourMap[y * mapWidth + x] = regions[i].colour;
+                            tiles[x, y] = regions[i].tile;
+                            break;
+                        }
                     }
-
                 }
             }
         }
@@ -56,11 +90,18 @@ public class MapGenerator : MonoBehaviour
         switch (drawMode)
         {
             case DrawMode.NoiseMap:
+                if (plane != null && !plane.activeSelf) plane.SetActive(true);
+                tilemap?.ClearAllTiles();
                 display.DrawTexture(TextureGenerator.TextureFromHeightMap(noiseMap));
                 break;
             case DrawMode.ColourMap:
+                if (plane != null && !plane.activeSelf) plane.SetActive(true);
+                tilemap?.ClearAllTiles();
                 display.DrawTexture(TextureGenerator.TextureFromColourMap(colourMap, mapWidth, mapHeight));
-
+                break;
+            case DrawMode.TileMap:
+                if (plane != null && plane.activeSelf) plane.SetActive(false);
+                display.DrawTiles(tilemap, tiles);
                 break;
             default:
                 break;
@@ -87,4 +128,5 @@ public struct TerrainType {
     public string name;
     public float heightValue;
     public Color colour;
+    public Tile tile;
 }

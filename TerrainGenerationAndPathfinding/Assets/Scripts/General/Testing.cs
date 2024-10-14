@@ -1,54 +1,76 @@
-using UnityEngine;
-using CodeMonkey.Utils;
-using CodeMonkey;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class Testing : MonoBehaviour
 {
-    private Pathfinding pathfinding;
-    private CustomGrid<PathNode> grid;
+    private MapGenerator generator;
+    private CustomGrid<PathNode<Cell>> grid;
+    private Pathfinding<Cell> pathfinding;
 
-    public PathNode startNode;
-    public PathNode endNode;
+    public PathNode<Cell> startCell;
+    public PathNode<Cell> endCell;
 
-    public Vector2Int gridSize;
+    public List<PathNode<Cell>> path;
+
     private void Start()
     {
-        //pathfinding = new Pathfinding(gridSize.x, gridSize.y);
-        //grid = pathfinding.GetGrid();
+        generator = FindObjectOfType<MapGenerator>();
+        grid = generator?.grid;
+        pathfinding = new Pathfinding<Cell>(grid);
     }
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(1))
-        {
-            Vector3 mouseWorldPos = UtilsClass.GetMouseWorldPosition();
-            //grid.GetXY(mouseWorldPos, out int x, out int y);
-            startNode = grid.GetGridObject(mouseWorldPos);
-        }
         if (Input.GetMouseButtonDown(0))
         {
-            if (startNode == null)
-                return;
+            startCell = GetNodeAtMousePos();
+        }
 
-            Vector3 mouseWorldPos = UtilsClass.GetMouseWorldPosition();
-            //grid.GetXY(mouseWorldPos, out int x, out int y);
-            endNode = grid.GetGridObject(mouseWorldPos);
+        if (Input.GetMouseButtonDown(1))
+        {
+            endCell = GetNodeAtMousePos();
+        }
 
-            if (endNode == null)
-                return;
+        if (Input.GetKeyDown(KeyCode.Space) && startCell != null && endCell != null)
+        {
+            path = pathfinding.FindPath(startCell.x, startCell.y, endCell.x, endCell.y);
+        }
+    }
 
-            List<PathNode> path = pathfinding.FindPath(startNode.x, startNode.y, endNode.x, endNode.y);
+    private PathNode<Cell> GetNodeAtMousePos()
+    {
+        Vector3 mouseWorldPos = GetMouseWorldPosition(); ;
+        
+        PathNode<Cell> node = grid?.GetGridObject(mouseWorldPos);
 
-            if (path != null)
+        return node;
+    }
+
+    public static Vector3 GetMouseWorldPosition()
+    {
+        Vector3 vec = GetMouseWorldPositionWithZ(Input.mousePosition, Camera.main);
+        vec.z = 0f;
+        return vec;
+    }
+
+    public static Vector3 GetMouseWorldPositionWithZ(Vector3 screenPosition, Camera worldCamera)
+    {
+        Vector3 worldPosition = worldCamera.ScreenToWorldPoint(screenPosition);
+        return worldPosition;
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+
+        if (path != null && path.Count > 1)
+        {
+            for (int i = 1; i < path.Count; i++)
             {
-                for (int i = 0; i < path.Count - 1; i++)
-                {
-                    Vector3 start = new Vector3(path[i].x, path[i].y) * 10f + Vector3.one * 5f;
-                    Vector3 end = new Vector3(path[i + 1].x, path[i + 1].y) * 10f + Vector3.one * 5f;
-                    Debug.DrawLine(start, end, Color.green, 10f);
-                }
+                //if (path[i + 1] != null)
+                //    Gizmos.DrawLine(new Vector3(path[i].x, path[i].y), new Vector3(path[i + 1].x, path[i + 1].y));
+                Gizmos.DrawLine(new Vector3(path[i].x, path[i].y), new Vector3(path[i - 1].x, path[i - 1].y));
             }
-        }   
+        }
     }
 }

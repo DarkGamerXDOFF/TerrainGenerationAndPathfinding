@@ -1,8 +1,6 @@
-using UnityEngine;
-
-public class PathNode 
+public class PathNode<T>
 {
-    private CustomGrid<PathNode> grid;
+    private CustomGrid<PathNode<T>> grid;
     public int x { get; private set; }
     public int y { get; private set; }
 
@@ -10,13 +8,24 @@ public class PathNode
     public int hCost;
     public int fCost;
 
-    public PathNode cameFromNode;
+    public T nodeObject { get; private set; }
 
-    public PathNode(CustomGrid<PathNode> grid, int x, int y)
+
+    public PathNode<T> cameFromNode;
+
+    public bool walkable { get; private set; }
+
+    public PathNode(CustomGrid<PathNode<T>> grid, int x, int y)
     {
         this.grid = grid;
         this.x = x;
-        this.y = y; 
+        this.y = y;
+    }
+
+    public void SetNodeObject(T nodeObject, bool walkable)
+    {
+        this.nodeObject = nodeObject;
+        this.walkable = walkable;
     }
 
     public void CalculateFCost()
