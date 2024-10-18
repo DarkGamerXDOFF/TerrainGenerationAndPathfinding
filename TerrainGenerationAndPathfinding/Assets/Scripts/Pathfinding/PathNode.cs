@@ -1,4 +1,4 @@
-public class PathNode<T>
+public class PathNode<T> where T : IWalkable
 {
     private CustomGrid<PathNode<T>> grid;
     public int x { get; private set; }

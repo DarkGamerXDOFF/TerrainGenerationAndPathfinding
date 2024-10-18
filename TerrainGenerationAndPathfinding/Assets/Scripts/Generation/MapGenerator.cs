@@ -25,7 +25,7 @@ public class MapGenerator : MonoBehaviour
     public bool viewCellValue = false;
     public TerrainType[] regions;
 
-    public CustomGrid<PathNode<Cell>> grid;
+    private CustomGrid<Cell> grid;
     public Tilemap tilemap;
     public GameObject plane;
 
@@ -34,15 +34,16 @@ public class MapGenerator : MonoBehaviour
     [Range(0,1f)]
     public float treshhold = .4f;
 
-    private void Awake()
+    public CustomGrid<Cell> GetGrid()
     {
         GenerateMap();
+        return grid;
     }
 
     public void GenerateMap()
     {
-        grid = new CustomGrid<PathNode<Cell>>(mapWidth, mapHeight, 10f, Vector3.zero,
-            (CustomGrid<PathNode<Cell>> g, int x, int y) => new PathNode<Cell>(g, x, y));
+        grid = new CustomGrid<Cell>(mapWidth, mapHeight, 10f, Vector3.zero,
+            (CustomGrid<Cell> g, int x, int y) => new Cell(0, treshhold));
 
         float[,] noiseMap = Noise.GenerateNoiseMap(mapWidth, mapHeight,seed, noiseScale, octaves, persistance, lacunarity, offset);
         Color[] colourMap = new Color[mapHeight * mapWidth];
@@ -53,16 +54,14 @@ public class MapGenerator : MonoBehaviour
             for (int x = 0; x < mapWidth; x++)
             {
                 //Loop through the cells in the grid and assign corresponding noise value
-                Cell cell = new Cell(noiseMap[x, y], treshhold);
+                Cell cell = grid.GetGridObject(x, y);
                 cell.Altitude = noiseMap[x, y];
-                grid.GetGridObject(x, y).SetNodeObject(cell, cell.walkable);
-
 
                 //Apply the noise values to the colour map
                 if (viewCellValue)
                 {
-                    colourMap[y * mapWidth + x] = cell.walkable ? Color.white : Color.black;
-                    tiles[x, y] = cell.walkable ? walkable : blocked;
+                    colourMap[y * mapWidth + x] = cell.Walkable ? Color.white : Color.black;
+                    tiles[x, y] = cell.Walkable ? walkable : blocked;
                 }
                 else
                 {

@@ -1,7 +1,7 @@
-public class Cell
+public class Cell : IWalkable
 {
     private float altitude;
-    public bool walkable;
+    private bool walkable;
     private float treshhold;
 
     public Cell(float altitude, float treshhold)
@@ -19,7 +19,13 @@ public class Cell
         set
         {
             altitude = value;
-            walkable = altitude >= treshhold;
+            Walkable = altitude >= treshhold;
         }
+    }
+
+    public bool Walkable 
+    { 
+        get =>  walkable; 
+        set => walkable  = value; 
     }
 }

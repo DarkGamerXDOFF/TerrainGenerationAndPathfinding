@@ -1,26 +1,59 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Pathfinding<T>
+public class Pathfinding<T> where T : IWalkable
 {
     private const int MOVE_STRAIGT_COST = 10;
     private const int MOVE_DIAGONAL_COST = 14;
 
     private CustomGrid<PathNode<T>> grid;
+    private CustomGrid<T> gridInput;
+
+    public bool moveAdjecant = true;
 
     private List<PathNode<T>> openList;
     private List<PathNode<T>> closedList;
 
-    public Pathfinding(CustomGrid<PathNode<T>> grid)
+    public Pathfinding(CustomGrid<T> gridInput, bool moveAdjecant)
     {
-        this.grid = grid;
+        this.gridInput = gridInput;
+        grid = TransformGrid();
+        this.moveAdjecant = moveAdjecant;
     }
 
-    public List<PathNode<T>> FindPath(int startX, int startY, int endX, int endY)
+    private CustomGrid<PathNode<T>> TransformGrid()
     {
-        PathNode<T> startNode = grid.GetGridObject(startX, startY);
-        PathNode<T> endNode = grid.GetGridObject(endX, endY);
-        
+        int width = gridInput.GetWidth();
+        int height = gridInput.GetHeight();
+
+        CustomGrid<PathNode<T>> pathGrid = new CustomGrid<PathNode<T>>(width, height,
+            10f, Vector3.zero, (CustomGrid<PathNode<T>> g, int x, int y) => new PathNode<T>(g, x, y));
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                T obj = gridInput.GetGridObject(x, y);
+                pathGrid.GetGridObject(x, y).SetNodeObject(obj, obj.Walkable);
+            }
+        }
+
+        return pathGrid;
+    }
+
+    private PathNode<T> GetPathNode(T input)
+    {
+        int x, y;
+        gridInput.GetXY(input, out x, out y);
+        PathNode<T> node = grid.GetGridObject(x, y);
+        return node;
+    }
+
+    public List<PathNode<T>> FindPath(T start, T end)
+    {
+        PathNode<T> startNode = GetPathNode(start);
+        PathNode<T> endNode = GetPathNode(end);
+
         openList = new List<PathNode<T>> { startNode };
         closedList = new List<PathNode<T>>();
 
@@ -38,7 +71,7 @@ public class Pathfinding<T>
         startNode.hCost = CalculateDistanceCost(startNode, endNode);
         startNode.CalculateFCost();
 
-        while(openList.Count > 0)
+        while (openList.Count > 0)
         {
             PathNode<T> currentNode = GetLowestFCost(openList);
             if (currentNode == endNode)
@@ -85,34 +118,37 @@ public class Pathfinding<T>
     {
         List<PathNode<T>> neighbourList = new List<PathNode<T>>();
 
+        // Left
         if (currentNode.x - 1 >= 0)
-        {
-            //Left
             neighbourList.Add(GetNode(currentNode.x - 1, currentNode.y));
 
-            //Left Down
-            if (currentNode.y - 1 >= 0) neighbourList.Add(GetNode(currentNode.x - 1, currentNode.y - 1));
-
-            //Left Up
-            if (currentNode.y + 1 < grid.GetHeight()) neighbourList.Add(GetNode(currentNode.x - 1, currentNode.y + 1));
-        }
+        // Right
         if (currentNode.x + 1 < grid.GetWidth())
-        {
-            //Right
             neighbourList.Add(GetNode(currentNode.x + 1, currentNode.y));
 
-            //Right Down
-            if (currentNode.y - 1 >= 0) neighbourList.Add(GetNode(currentNode.x + 1, currentNode.y - 1));
+        // Down
+        if (currentNode.y - 1 >= 0)
+            neighbourList.Add(GetNode(currentNode.x, currentNode.y - 1));
 
-            //Right Up
-            if (currentNode.y + 1 < grid.GetHeight()) neighbourList.Add(GetNode(currentNode.x + 1, currentNode.y + 1));
+        // Up
+        if (currentNode.y + 1 < grid.GetHeight())
+            neighbourList.Add(GetNode(currentNode.x, currentNode.y + 1));
+
+        // Add diagonal neighbors only if moveAdjecant is true
+        if (moveAdjecant)
+        {
+            if (currentNode.x - 1 >= 0 && currentNode.y - 1 >= 0) // Left Down
+                neighbourList.Add(GetNode(currentNode.x - 1, currentNode.y - 1));
+
+            if (currentNode.x - 1 >= 0 && currentNode.y + 1 < grid.GetHeight()) // Left Up
+                neighbourList.Add(GetNode(currentNode.x - 1, currentNode.y + 1));
+
+            if (currentNode.x + 1 < grid.GetWidth() && currentNode.y - 1 >= 0) // Right Down
+                neighbourList.Add(GetNode(currentNode.x + 1, currentNode.y - 1));
+
+            if (currentNode.x + 1 < grid.GetWidth() && currentNode.y + 1 < grid.GetHeight()) // Right Up
+                neighbourList.Add(GetNode(currentNode.x + 1, currentNode.y + 1));
         }
-
-        //Down
-        if (currentNode.y - 1 >= 0) neighbourList.Add(GetNode(currentNode.x, currentNode.y - 1));
-
-        //Up
-        if (currentNode.y + 1 < grid.GetHeight()) neighbourList.Add(GetNode(currentNode.x, currentNode.y + 1));
 
         return neighbourList;
     }
@@ -128,7 +164,7 @@ public class Pathfinding<T>
 
         PathNode<T> currentNode = endNode;
 
-        while(currentNode.cameFromNode != null)
+        while (currentNode.cameFromNode != null)
         {
             path.Add(currentNode.cameFromNode);
             currentNode = currentNode.cameFromNode;

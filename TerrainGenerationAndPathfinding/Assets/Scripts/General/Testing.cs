@@ -4,19 +4,21 @@ using UnityEngine;
 public class Testing : MonoBehaviour
 {
     private MapGenerator generator;
-    private CustomGrid<PathNode<Cell>> grid;
+    private CustomGrid<Cell> grid;
     private Pathfinding<Cell> pathfinding;
 
-    public PathNode<Cell> startCell;
-    public PathNode<Cell> endCell;
+    public bool moveAdjecant = true;
+
+    public Cell startCell;
+    public Cell endCell;
 
     public List<PathNode<Cell>> path;
 
     private void Start()
     {
         generator = FindObjectOfType<MapGenerator>();
-        grid = generator?.grid;
-        pathfinding = new Pathfinding<Cell>(grid);
+        grid = generator?.GetGrid();
+        pathfinding = new Pathfinding<Cell>(grid, moveAdjecant);
     }
 
     private void Update()
@@ -33,16 +35,17 @@ public class Testing : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space) && startCell != null && endCell != null)
         {
-            path = pathfinding.FindPath(startCell.x, startCell.y, endCell.x, endCell.y);
+            GetPath();
         }
+        
     }
 
-    private PathNode<Cell> GetNodeAtMousePos()
+    private void GetPath() => path = pathfinding.FindPath(startCell, endCell);
+
+    private Cell GetNodeAtMousePos()
     {
         Vector3 mouseWorldPos = GetMouseWorldPosition(); ;
-        
-        PathNode<Cell> node = grid?.GetGridObject(mouseWorldPos);
-
+        Cell node = grid?.GetGridObject(mouseWorldPos);
         return node;
     }
 
@@ -67,8 +70,6 @@ public class Testing : MonoBehaviour
         {
             for (int i = 1; i < path.Count; i++)
             {
-                //if (path[i + 1] != null)
-                //    Gizmos.DrawLine(new Vector3(path[i].x, path[i].y), new Vector3(path[i + 1].x, path[i + 1].y));
                 Gizmos.DrawLine(new Vector3(path[i].x, path[i].y), new Vector3(path[i - 1].x, path[i - 1].y));
             }
         }

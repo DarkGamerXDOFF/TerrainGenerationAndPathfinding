@@ -35,9 +35,30 @@ public class CustomGrid<TGridObject>
 
     public void GetXY(Vector3 worldPos, out int x, out int y)
     {
-        
+
         x = Mathf.RoundToInt(worldPos.x);
         y = Mathf.RoundToInt(worldPos.y);
+
+        if (debug)
+            Debug.Log($"Cell: {x}||{y}");
+    }
+
+    public void GetXY(TGridObject obj, out int x, out int y)
+    {
+        x = 0;
+        y = 0;
+
+        for (int j = 0; j < height; j++)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                if (gridArray[i, j].Equals(obj))
+                {
+                    x = i; y = j;
+                    break;
+                }
+            }
+        }
 
         if (debug)
             Debug.Log($"{x}||{y}");
@@ -65,7 +86,7 @@ public class CustomGrid<TGridObject>
             return gridArray[x, y];
         }
 
-        return default(TGridObject);
+        return default;
     }
 
     public TGridObject GetGridObject(Vector3 worldPos)
