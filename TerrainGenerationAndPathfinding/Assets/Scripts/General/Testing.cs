@@ -36,8 +36,7 @@ public class Testing : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && startCell != null && endCell != null)
         {
             GetPath();
-        }
-        
+        } 
     }
 
     private void GetPath() => path = pathfinding.FindPath(startCell, endCell);
@@ -51,12 +50,12 @@ public class Testing : MonoBehaviour
 
     public static Vector3 GetMouseWorldPosition()
     {
-        Vector3 vec = GetMouseWorldPositionWithZ(Input.mousePosition, Camera.main);
-        vec.z = 0f;
+        Vector3 vec = GetMouseWorldPosition(Input.mousePosition, Camera.main);
+        vec.y = 0f;
         return vec;
     }
 
-    public static Vector3 GetMouseWorldPositionWithZ(Vector3 screenPosition, Camera worldCamera)
+    public static Vector3 GetMouseWorldPosition(Vector3 screenPosition, Camera worldCamera)
     {
         Vector3 worldPosition = worldCamera.ScreenToWorldPoint(screenPosition);
         return worldPosition;
@@ -66,11 +65,17 @@ public class Testing : MonoBehaviour
     {
         Gizmos.color = Color.red;
 
+        if (startCell != null)
+            Gizmos.DrawWireSphere(new Vector3(startCell.x, 0, startCell.y), 1f);
+
+        if (endCell != null)
+            Gizmos.DrawWireSphere(new Vector3(endCell.x, 0, endCell.y), 1f);
+        
         if (path != null && path.Count > 1)
         {
             for (int i = 1; i < path.Count; i++)
             {
-                Gizmos.DrawLine(new Vector3(path[i].x, path[i].y), new Vector3(path[i - 1].x, path[i - 1].y));
+                Gizmos.DrawLine(new Vector3(path[i].x, 0, path[i].y),  new Vector3(path[i - 1].x, 0, path[i - 1].y));
             }
         }
     }

@@ -18,5 +18,11 @@ public class MapGeneratorEditor : Editor
         {
             mapGen.GenerateMap();
         }
+        
+        if (GUILayout.Button("Random Position"))
+        {
+            mapGen.RandomizeOffset();
+            mapGen.GenerateMap();
+        }
     }
 }

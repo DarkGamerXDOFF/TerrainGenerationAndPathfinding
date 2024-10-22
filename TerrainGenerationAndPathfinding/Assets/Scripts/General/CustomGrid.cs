@@ -28,16 +28,13 @@ public class CustomGrid<TGridObject>
         }
     }
 
-    private Vector3 GetWorldPosition(int x, int y)
-    {
-        return new Vector3(x, y) * cellSize + originPos;
-    }
+    public Vector3 GetWorldPosition(int x, int y) => new Vector3(x, 0, y) * cellSize + originPos;
 
     public void GetXY(Vector3 worldPos, out int x, out int y)
     {
 
         x = Mathf.RoundToInt(worldPos.x);
-        y = Mathf.RoundToInt(worldPos.y);
+        y = Mathf.RoundToInt(worldPos.z);
 
         if (debug)
             Debug.Log($"Cell: {x}||{y}");
@@ -93,17 +90,9 @@ public class CustomGrid<TGridObject>
     {
         int x, y;
         GetXY(worldPos, out x, out y);
-
         return GetGridObject(x, y);
     }
 
-    public int GetWidth()
-    {
-        return width;
-    }
-
-    public int GetHeight()
-    {
-        return height;
-    }
+    public int GetWidth() => width;
+    public int GetHeight() => height;
 }
