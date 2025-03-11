@@ -27,6 +27,7 @@ public class PathNode<T> where T : IWalkable
         this.nodeObject = nodeObject;
         this.walkable = walkable;
     }
+    public T GetNodeObject() => nodeObject;
 
     public void CalculateFCost()
     {

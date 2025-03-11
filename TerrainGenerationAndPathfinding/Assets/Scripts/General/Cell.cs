@@ -1,7 +1,8 @@
 public class Cell : IWalkable
 {
     private float altitude;
-    private bool walkable;
+    private bool isWalkable;
+    private bool isWater;
     private float treshhold;
     public int x;
     public int y;
@@ -13,23 +14,21 @@ public class Cell : IWalkable
         Altitude = altitude;
         this.treshhold = treshhold;
     }
-
     public float Altitude
     {
-        get
-        {
-            return altitude;
-        }
-        set
-        {
-            altitude = value;
-            Walkable = altitude >= treshhold;
-        }
+        get => altitude;
+        set { altitude = value; IsWater = altitude < treshhold; }
     }
 
-    public bool Walkable 
+    public bool IsWater
+    {
+        get => isWater;
+        set { isWater = value; IsWalkable = !value; }
+    }
+
+    public bool IsWalkable 
     { 
-        get =>  walkable; 
-        set => walkable  = value; 
+        get =>  isWalkable; 
+        set => isWalkable  = value; 
     }
 }

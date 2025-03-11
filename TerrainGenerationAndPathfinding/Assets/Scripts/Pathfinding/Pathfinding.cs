@@ -34,7 +34,7 @@ public class Pathfinding<T> where T : IWalkable
             for (int x = 0; x < width; x++)
             {
                 T obj = gridInput.GetGridObject(x, y);
-                pathGrid.GetGridObject(x, y).SetNodeObject(obj, obj.Walkable);
+                pathGrid.GetGridObject(x, y).SetNodeObject(obj, obj.IsWalkable);
             }
         }
 

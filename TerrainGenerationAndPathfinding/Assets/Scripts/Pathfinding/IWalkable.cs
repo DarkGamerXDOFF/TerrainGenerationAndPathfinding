@@ -1,4 +1,4 @@
 public interface IWalkable
 {
-    public bool Walkable { get; set; }
+    public bool IsWalkable { get; set; }
 }

@@ -1,14 +1,15 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class MapGenerator : MonoBehaviour
 {
-    public static MapGenerator Instance;
-
     [Header("Debug only")]
     public bool autoUpdate = false;
+    public Testing testing;
 
     [Space]
     [Header("Generation")]
+    [Header("--Terrain")]
     public int mapWidth;
     public int mapHeight;
     public float cellSize = 1f;
@@ -23,105 +24,72 @@ public class MapGenerator : MonoBehaviour
     [Range(0, 1f)]
     public float treshhold = .4f;
 
-    public enum DrawMode {NOISEMAP, COLOURMAP};
+    [Header("--Rivers")]
+    public float riverDepth = 0.5f;
+    float riverStartTreshhold = .7f;
 
     [Header("Visualize")]
-    public DrawMode drawMode = DrawMode.NOISEMAP;
     public bool useFalloffMap = true;
-    public bool viewCellValue = false;
-    public bool useMeshHeight = true;
-    public float meshHeightMultiplier = 10;
-    public AnimationCurve meshHeightCurve;
+    public Color riverColor;
     public TerrainType[] regions;
 
-    private CustomGrid<Cell> grid;
     private float[,] falloffMap;
 
-    private void Awake()
-    {
-        if (Instance != null)
-            Instance = this;
-        else
-            Destroy(this);
+    private List<Cell> riverCells;
 
-        falloffMap = FalloffGenerator.GenerateFalloffMap(mapWidth, mapHeight);
-    }
-    public CustomGrid<Cell> GetGrid()
-    {
-        GenerateMap();
-        return grid;
-    }
 
-    public void GenerateMap()
+    public void GenerateMap(out CustomGrid<Cell> grid, out float[,] noiseMap, out Color[] colourMap)
     {
         grid = new CustomGrid<Cell>(mapWidth, mapHeight,1f, Vector3.zero,
             (CustomGrid<Cell> g, int x, int y) => new Cell(x, y, 0, treshhold));
-
-        float[,] noiseMap = Noise.GenerateNoiseMap(mapWidth, mapHeight,seed, 
+        
+        // Generate noisemap for terrain
+        noiseMap = Noise.GenerateNoiseMap(mapWidth, mapHeight,seed, 
             noiseScale, octaves, persistance, lacunarity, offset);
-        Color[] colourMap = new Color[mapHeight * mapWidth];
+
+        if (falloffMap == null)
+            falloffMap = FalloffGenerator.GenerateFalloffMap(mapWidth, mapHeight);
+
+        colourMap = new Color[mapHeight * mapWidth];
+
 
         for (int y = 0; y < mapHeight; y++)
         {
             for (int x = 0; x < mapWidth; x++)
             {
+                Cell cell = grid.GetGridObject(x, y);
+
                 //Apply falloff map
                 if (useFalloffMap)
                     noiseMap[x, y] = Mathf.Clamp01(noiseMap[x, y] - falloffMap[x, y]);
 
-                //Loop through the cells in the grid and assign corresponding noise value
-                Cell cell = grid.GetGridObject(x, y);
+                //Assign corresponding value
                 cell.Altitude = noiseMap[x, y];
 
-
                 //Apply the noise values to the colour map
-                if (viewCellValue)
+                for (int i = 0; i < regions.Length; i++)
                 {
-                    colourMap[y * mapWidth + x] = cell.Walkable ? Color.white : Color.black;
-                }
-                else
-                {
-                    for (int i = 0; i < regions.Length; i++)
+                    if (cell.Altitude <= regions[i].maxheight)
                     {
-                        if (cell.Altitude <= regions[i].maxheight)
-                        {
-                            float temp = Mathf.InverseLerp(i-1 >= 0 ? regions[i-1].maxheight: 0, 
-                                regions[i].maxheight, cell.Altitude);
-                            Color colour = regions[i].gradient.Evaluate(temp);
-                            colourMap[y * mapWidth + x] = colour;
-                            break;
-                        }
+                        float temp = Mathf.InverseLerp(i - 1 >= 0 ? regions[i - 1].maxheight : 0,
+                            regions[i].maxheight, cell.Altitude);
+
+                        Color colour = regions[i].gradient.Evaluate(temp);
+                        colourMap[y * mapWidth + x] = colour;
+
+                        break;
                     }
                 }
             }
         }
-        MapDisplay display = FindObjectOfType<MapDisplay>();
-        
-        if (display == null)
-        {
-            Debug.LogError("MapDisplay has not been assigned properly!");
-            return;
-        }
+        RiverGenerator riverGen = new RiverGenerator();
+        riverCells = riverGen.GenerateRivers(grid, riverStartTreshhold);
 
-        switch (drawMode)
+        for (int i = 0; i < riverCells.Count; i++)
         {
-            default: break;
-            case DrawMode.NOISEMAP: 
-                if (useMeshHeight)
-                    display.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, meshHeightMultiplier, meshHeightCurve),
-                    TextureGenerator.TextureFromHeightMap(noiseMap));
-                else
-                    display.DrawMesh(MeshGenerator.GenerateTerrainMesh(grid),
-                    TextureGenerator.TextureFromHeightMap(noiseMap)); 
-                break;
-            case DrawMode.COLOURMAP: 
-                if (useMeshHeight)
-                    display.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, meshHeightMultiplier, meshHeightCurve),
-                    TextureGenerator.TextureFromColourMap(colourMap, mapWidth, mapHeight));
-                else
-                    display.DrawMesh(MeshGenerator.GenerateTerrainMesh(grid),
-                    TextureGenerator.TextureFromColourMap(colourMap, mapWidth, mapHeight)); 
-                break;
+            Cell cell = riverCells[i];
+            cell.Altitude -= riverDepth;
+            colourMap[cell.y * mapWidth + cell.x] = riverColor;
         }
     }
 
@@ -141,9 +109,6 @@ public class MapGenerator : MonoBehaviour
 
         if (octaves < 0)
             octaves = 0;
-
-        if (useFalloffMap == true)
-            falloffMap = FalloffGenerator.GenerateFalloffMap(mapWidth, mapHeight);
     }
 }
 

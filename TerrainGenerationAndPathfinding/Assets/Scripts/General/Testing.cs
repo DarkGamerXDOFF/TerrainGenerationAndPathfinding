@@ -3,7 +3,9 @@ using UnityEngine;
 
 public class Testing : MonoBehaviour
 {
-    private MapGenerator generator;
+    public MapGenerator mapGen;
+    public MapDisplay mapDisp;
+
     private CustomGrid<Cell> grid;
     private Pathfinding<Cell> pathfinding;
 
@@ -16,27 +18,37 @@ public class Testing : MonoBehaviour
 
     private void Start()
     {
-        generator = FindObjectOfType<MapGenerator>();
-        grid = generator?.GetGrid();
-        pathfinding = new Pathfinding<Cell>(grid, moveAdjecant);
+        //generator = FindObjectOfType<MapGenerator>();
+        //grid = generator?.GetGrid();
+        //pathfinding = new Pathfinding<Cell>(grid, moveAdjecant);
+    }
+
+    public void GenerateMap()
+    {
+        CustomGrid<Cell> grid;
+        float[,] noiseMap;
+        Color[] colourMap;
+
+        mapGen.GenerateMap(out grid, out noiseMap, out colourMap);
+        mapDisp.DrawTerrain(grid, noiseMap, colourMap);
     }
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            startCell = GetNodeAtMousePos();
-        }
+        //if (Input.GetMouseButtonDown(0))
+        //{
+        //    startCell = GetNodeAtMousePos();
+        //}
 
-        if (Input.GetMouseButtonDown(1))
-        {
-            endCell = GetNodeAtMousePos();
-        }
+        //if (Input.GetMouseButtonDown(1))
+        //{
+        //    endCell = GetNodeAtMousePos();
+        //}
 
-        if (Input.GetKeyDown(KeyCode.Space) && startCell != null && endCell != null)
-        {
-            GetPath();
-        } 
+        //if (Input.GetKeyDown(KeyCode.Space) && startCell != null && endCell != null)
+        //{
+        //    GetPath();
+        //} 
     }
 
     private void GetPath() => path = pathfinding.FindPath(startCell, endCell);
